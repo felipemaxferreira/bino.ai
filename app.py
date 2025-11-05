@@ -100,7 +100,7 @@ def left_panel():
 def chat_panel():
     inject_global_css()
     
-    st.markdown("#### Chat com o Bino")
+    st.markdown("#### Assistente com o Bino")
     
     # Container principal do chat
     st.markdown('<div class="bino-chat-main">', unsafe_allow_html=True)
