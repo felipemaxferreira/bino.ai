@@ -39,7 +39,7 @@ def progress_card(title: str, value: str, pct: float, positive: bool = True):
 
 def badge(text: str, style: str):
     colors = {
-        "Crítica": ("#FEE2E2", "#B91C1C"),
+        "OV Crítica": ("#FEE2E2", "#B91C1C"),
         "Média": ("#FEF3C7", "#B45309"),
         "Baixa": ("#F3F4F6", "#374151")
     }
@@ -83,6 +83,14 @@ def estoque_list(items):
             with c1: st.metric("Estoque Total", f"{it['estoque']} {it['unidade']}")
             with c2: st.metric("Reservado", f"{it['reservado']} {it['unidade']}")
             with c3: st.metric("Disponível", f"{it['disponivel']} {it['unidade']}")
+            # Barra de progresso verde para estoque
+            st.markdown("""
+                <style>
+                    .stProgress > div > div > div > div {
+                        background-color: #16A34A;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
             st.progress(pct, text=f"Disponibilidade: {pct*100:.1f}%")
 
 def liberado_list(items):
@@ -118,46 +126,6 @@ def _image_to_base64(path: str) -> str:
         return ""
 
 
-def assistant_header(title: str, subtitle: str, avatar_path: str):
-    """
-    Cabeçalho do assistente com avatar carregado de arquivo local (assets/Bino-Linkedin.jpg)
-    usando st.image (mais robusto no Streamlit).
-    """
-    container = st.container()
-    with container:
-        col_avatar, col_text = st.columns([0.18, 0.82])
-        with col_avatar:
-            p = Path(avatar_path)
-            if p.exists():
-                # borda verde simulada com container + background
-                st.markdown(
-                    """
-                    <div style="width:52px;height:52px;border-radius:50%;
-                         border:2px solid #16A34A; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,.08);">
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                # usa o mesmo espaço do div acima, mas renderiza a imagem logo abaixo
-                st.image(str(p), width=52)
-            else:
-                # fallback discreto
-                st.markdown(
-                    """
-                    <div style="width:52px;height:52px;border-radius:50%;
-                         border:2px solid #16A34A;background:#E5E7EB"></div>
-                    """,
-                    unsafe_allow_html=True
-                )
-        with col_text:
-            st.markdown(f"**{title}**")
-            st.markdown('<span style="color:#16A34A; font-size:0.9rem;">Online — Pronto para ajudar</span>',
-                        unsafe_allow_html=True)
-
-
-# -------------------------------------------------
-# 1) CSS Global seguro e responsivo (escopado p/ chat)
-# -------------------------------------------------
 def inject_global_css():
     st.markdown("""
     <style>
@@ -176,6 +144,9 @@ def inject_global_css():
         box-shadow: 0 4px 20px rgba(17, 24, 39, .08);
         overflow: hidden;
         margin-bottom: 1rem;
+        height: 500px;
+        overflow-y: auto;
+        padding: 20px;
     }
 
     /* Header do chat */
@@ -188,22 +159,12 @@ def inject_global_css():
         border-bottom: 1px solid #E5E7EB;
     }
 
-    /* Área de mensagens com scroll */
-    .bino-messages-container {
-        height: 400px;
-        overflow-y: auto;
-        padding: 20px;
-        background: #F8FAFC;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
     /* Estilos das mensagens */
     .bino-message {
         display: flex;
         gap: 12px;
         align-items: flex-start;
+        margin-bottom: 20px;
     }
 
     .bino-message.user {
@@ -214,6 +175,7 @@ def inject_global_css():
         background: #16A34A;
         color: white;
         border-radius: 18px 18px 4px 18px;
+        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
     }
 
     .bino-message.assistant .bino-message-bubble {
@@ -221,52 +183,70 @@ def inject_global_css():
         color: #111827;
         border: 1px solid #E5E7EB;
         border-radius: 18px 18px 18px 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
 
     .bino-message-bubble {
-        padding: 12px 16px;
-        max-width: 70%;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        line-height: 1.4;
+        padding: 14px 18px;
+        max-width: 75%;
+        line-height: 1.5;
+        font-size: 0.95rem;
     }
 
     .bino-message-timestamp {
         font-size: 0.75rem;
         color: #6B7280;
-        margin-top: 4px;
+        margin-top: 6px;
     }
                 
     .user-message-timestamp {
         font-size: 0.75rem;
-        color: white;
-        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 6px;
     }
 
     .bino-avatar {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         border: 2px solid #16A34A;
         object-fit: cover;
         flex-shrink: 0;
     }
 
-    /* Quick actions */
-    .bino-quick-actions {
-        padding: 16px 20px;
+    /* Área de input - MAIOR E MAIS REFINADA */
+    .bino-input-container {
+        padding: 20px;
+        background: white;
         border-top: 1px solid #E5E7EB;
+        border-radius: 0 0 16px 16px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Quick actions - MAIS DISCRETOS E ORGANIZADOS */
+    .bino-quick-actions {
+        padding: 16px 0 0 0;
         background: white;
     }
 
+    .quick-actions-title {
+        font-size: 0.85rem;
+        color: #6B7280;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
     .bino-quick-actions .stButton > button {
-        border: 1px solid #D1D5DB !important;
-        background: #FFFFFF !important;
-        color: #374151 !important;
-        font-size: 0.85rem !important;
+        border: 1px solid #E5E7EB !important;
+        background: #F8FAFC !important;
+        color: #4B5563 !important;
+        font-size: 0.8rem !important;
         padding: 6px 12px !important;
-        border-radius: 16px !important;
+        border-radius: 12px !important;
         transition: all 0.2s ease !important;
         margin: 2px !important;
+        font-weight: 500;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .bino-quick-actions .stButton > button:hover {
@@ -274,13 +254,43 @@ def inject_global_css():
         color: #065F46 !important;
         background: #F0FDF4 !important;
         transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1);
     }
 
-    /* Área de input */
-    .bino-input-container {
-        padding: 16px 20px;
-        background: white;
-        border-top: 1px solid #E5E7EB;
+    /* Campo de input do chat MAIOR - 3 LINHAS */
+    .stChatInput > div > div {
+        border: 2px solid #E5E7EB !important;
+        border-radius: 12px !important;
+        background: #F8FAFC !important;
+        transition: all 0.3s ease !important;
+        min-height: 80px !important; /* Aumentado para 3 linhas */
+    }
+
+    .stChatInput textarea {
+        min-height: 60px !important; /* Altura aumentada */
+        line-height: 1.5 !important;
+        padding: 12px 16px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .stChatInput > div > div:focus-within {
+        border-color: #16A34A !important;
+        background: white !important;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1) !important;
+    }
+
+    /* Botão de enviar melhorado */
+    .stChatInputContainer button {
+        background: #16A34A !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        margin: 8px !important;
+    }
+
+    .stChatInputContainer button:hover {
+        background: #15803D !important;
+        transform: translateY(-1px);
     }
 
     /* Animação de digitação */
@@ -290,6 +300,7 @@ def inject_global_css():
         gap: 8px;
         color: #065F46;
         font-style: italic;
+        font-size: 0.9rem;
     }
 
     .bino-dot {
@@ -310,17 +321,22 @@ def inject_global_css():
     }
 
     /* Scrollbar personalizada */
-    .bino-messages-container::-webkit-scrollbar {
+    .bino-chat-main::-webkit-scrollbar {
         width: 6px;
     }
 
-    .bino-messages-container::-webkit-scrollbar-track {
+    .bino-chat-main::-webkit-scrollbar-track {
         background: #F1F5F9;
     }
 
-    .bino-messages-container::-webkit-scrollbar-thumb {
+    .bino-chat-main::-webkit-scrollbar-thumb {
         background: #CBD5E1;
         border-radius: 3px;
+    }
+
+    /* Barras de progresso verdes */
+    .stProgress > div > div > div > div {
+        background-color: #16A34A !important;
     }
 
     /* Responsividade */
@@ -329,110 +345,34 @@ def inject_global_css():
             max-width: 85%;
         }
         
-        .bino-messages-container {
-            height: 350px;
+        .bino-chat-main {
+            height: 400px;
+        }
+        
+        .stChatInput > div > div {
+            min-height: 70px !important;
+        }
+        
+        .stChatInput textarea {
+            min-height: 50px !important;
         }
     }
     </style>
     """, unsafe_allow_html=True)
-# -------------------------------------------------
-# 2) Header do chat com avatar (usa st.image, robusto)
-# -------------------------------------------------
+
+# Funções auxiliares para avatar/header (mantidas para compatibilidade)
 def assistant_header(title: str, subtitle: str, avatar_path: str):
-    """
-    Cabeçalho do chat com avatar carregado de arquivo local (ex.: assets/Bino-Linkedin.jpg)
-    """
+    """Cabeçalho do chat com avatar."""
     left, right = st.columns([0.12, 0.88])
     with left:
         p = Path(avatar_path)
         if p.exists():
             st.image(str(p), width=48, caption=None)
         else:
-            # Placeholder discreto
             st.markdown(
                 "<div style='width:48px;height:48px;border-radius:50%;border:2px solid #16A34A;background:#E5E7EB'></div>",
                 unsafe_allow_html=True
             )
     with right:
-        st.markdown(f"<div class='bino-chat-title'>{title}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='bino-chat-sub'>{subtitle}</div>", unsafe_allow_html=True)
-
-# -----------------------------
-# Avatar / header
-# -----------------------------
-def assistant_header(title: str, subtitle: str, avatar_path: str):
-    """Cabeçalho do chat com avatar."""
-    img_html = ""
-    p = Path(avatar_path)
-    if p.exists():
-        img_html = f'<img src="app://{p.as_posix()}" style="width:42px;height:42px;border-radius:50%;border:2px solid #16A34A;object-fit:cover;" />'
-    else:
-        img_html = '<div style="width:42px;height:42px;border-radius:50%;border:2px solid #16A34A;background:#E5E7EB"></div>'
-
-    st.markdown(
-        f"""
-        <div class="bino-chat-header">
-            {img_html}
-            <div>
-                <div class="bino-chat-title">{title}</div>
-                <div class="bino-chat-sub">{subtitle}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# -----------------------------
-# Renderização de mensagens
-# -----------------------------
-def render_assistant_message(text: str, ts: str, avatar_path: str):
-    p = Path(avatar_path)
-    if p.exists():
-        avatar_tag = f'<img class="bino-avatar" src="app://{p.as_posix()}" />'
-    else:
-        avatar_tag = '<div class="bino-avatar"></div>'
-    st.markdown(
-        f"""
-        <div class="bino-msg assistant">
-            {avatar_tag}
-            <div>
-              <div class="bino-bubble assistant">{text}</div>
-              <div class="bino-ts">{ts}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def render_user_message(text: str, ts: str):
-    st.markdown(
-        f"""
-        <div class="bino-msg user">
-            <div>
-              <div class="bino-bubble user">{text}</div>
-              <div class="bino-ts" style="text-align:right">{ts}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def render_typing(avatar_path: str, label: str = "Bino está digitando"):
-    p = Path(avatar_path)
-    if p.exists():
-        avatar_tag = f'<img class="bino-avatar" src="app://{p.as_posix()}" />'
-    else:
-        avatar_tag = '<div class="bino-avatar"></div>'
-
-    st.markdown(
-        f"""
-        <div class="bino-msg assistant">
-            {avatar_tag}
-            <div class="bino-bubble assistant" style="display:inline-flex;align-items:center;gap:10px;">
-                <span class="bino-typing">{label}</span>
-                <span class="bino-dot"></span><span class="bino-dot"></span><span class="bino-dot"></span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown(f"<div style='font-weight:700; font-size:1.1rem;'>{title}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color:#16A34A; font-size:0.9rem;'>{subtitle}</div>", unsafe_allow_html=True)

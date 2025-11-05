@@ -20,6 +20,10 @@ def init_session_state():
                         "Como posso ajudar com o plano de despacho hoje?"),
             "timestamp": datetime.now().strftime("%H:%M")
         }]
+    if "focus_input" not in st.session_state:
+        st.session_state.focus_input = False
+    if "input_key" not in st.session_state:
+        st.session_state.input_key = 0
 
 def header():
     st.set_page_config(page_title=PAGE_TITLE, page_icon="🚚", layout="wide")
@@ -43,12 +47,12 @@ def header():
     )
 
 def left_panel():
-    st.markdown("#### Visão Operacional")
+    st.markdown("#### Despacho Mensal")
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
         kpi_card(
-            title="Dia Anterior",
+            title="Diário Online",
             value=f"{DESPACHO_DATA['diaAnterior']} ton",
             color="#3B82F6",
             icon="📅"
@@ -74,10 +78,22 @@ def left_panel():
             pct=(DESPACHO_DATA["acumulMensal"]/DESPACHO_DATA["planoAcumul"])*100,
             positive=DESPACHO_DATA["desvio"] >= 0
         )
+    
+    # Barra de progresso com cor verde
+    st.markdown("""
+        <style>
+            .stProgress > div > div > div > div {
+                background-color: #16A34A;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    st.progress(DESPACHO_DATA["capacidadeUtilizada"] / 100.0, text=f"Capacidade de Despacho Diária Utilizada: {DESPACHO_DATA['capacidadeUtilizada']}%")
 
-    st.markdown("#### Abas de Detalhes")
-    tab1, tab2, tab3, tab4 = st.tabs(["Despacho", "Sugestão", "Estoque", "Liberado"])
+    st.markdown("#### Sugestões do Bino")
+    tab1, tab2, tab3, tab4 = st.tabs(["Sugestão", "Despacho", "Estoque", "Liberado"])
     with tab1:
+        sugestao_list(SUGESTOES_PLANO)
+    with tab2:
         # Reexibe os KPIs principais de "Despacho" para ficar próximo à UI original
         st.caption("Indicadores de Despacho")
         c1, c2, c3 = st.columns(3)
@@ -87,15 +103,10 @@ def left_panel():
             st.metric("Acumul. Mensal", f"{DESPACHO_DATA['acumulMensal']:,} ton".replace(",", "."))
         with c3:
             st.metric("Plano Acumul.", f"{DESPACHO_DATA['planoAcumul']:,} ton".replace(",", "."))
-        st.progress(DESPACHO_DATA["capacidadeUtilizada"] / 100.0, text=f"Capacidade Utilizada: {DESPACHO_DATA['capacidadeUtilizada']}%")
-    with tab2:
-        sugestao_list(SUGESTOES_PLANO)
     with tab3:
         estoque_list(ESTOQUE_DATA)
     with tab4:
         liberado_list(LIBERADO_DATA)
-
-
 
 def chat_panel():
     inject_global_css()
@@ -103,10 +114,9 @@ def chat_panel():
     st.markdown("#### Assistente Bino")
     
     # Container principal do chat
-    st.markdown('<div class="bino-chat-main">', unsafe_allow_html=True)
+    #st.markdown('<div class="bino-chat-main">', unsafe_allow_html=True)
     
     # Header
-    #st.markdown('<div class="bino-chat-header">', unsafe_allow_html=True)
     avatar_file = os.path.join("assets", "Bino-Linkedin.jpg")
     
     # Renderizar histórico de mensagens
@@ -147,22 +157,67 @@ def chat_panel():
                 unsafe_allow_html=True
             )
     
-    # ÁREA PARA O INDICADOR DE DIGITAÇÃO - AGORA NO LUGAR CORRETO
+    # ÁREA PARA O INDICADOR DE DIGITAÇÃO
     typing_placeholder = st.empty()
     
     st.markdown('</div>', unsafe_allow_html=True)  # Fecha área de mensagens
     
-    # Quick Actions - AGORA FUNCIONA porque está dentro do contexto do Streamlit
-    st.markdown('<div class="bino-quick-actions">', unsafe_allow_html=True)
-    st.markdown("**Ações rápidas:**")
+    # Área de input - MAIOR E MAIS EVIDENTE
+    st.markdown('<div class="bino-input-container">', unsafe_allow_html=True)
     
-    # Criar colunas para os botões
+    # Input do chat - usando st.chat_input nativo com estilo melhorado
+    if "pending_prompt" not in st.session_state:
+        st.session_state.pending_prompt = None
+    
+    # JavaScript para focar e rolar para o input APÓS CADA RESPOSTA
+    if st.session_state.get("focus_input", False):
+        st.markdown("""
+            <script>
+                function focusAndScrollToInput() {
+                    const inputContainer = document.querySelector('.bino-input-container');
+                    const input = document.querySelector('.stChatInput textarea');
+                    
+                    if (inputContainer && input) {
+                        // Rola suavemente para o container de input
+                        inputContainer.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center'
+                        });
+                        
+                        // Foca no campo de texto
+                        input.focus();
+                        
+                        console.log('Foco e scroll aplicados após resposta do Bino');
+                    } else {
+                        // Tenta novamente se não encontrar os elementos
+                        setTimeout(focusAndScrollToInput, 200);
+                    }
+                }
+                
+                // Executa imediatamente
+                focusAndScrollToInput();
+            </script>
+        """, unsafe_allow_html=True)
+        # Reseta o estado após aplicar o foco
+        st.session_state.focus_input = False
+    
+    # Usar st.chat_input que é mais adequado para chat - COM MAIS LINHAS
+    user_input = st.chat_input(
+        "Digite sua pergunta para o Bino...", 
+        key=f"chat_input_{st.session_state.input_key}"
+    )
+    
+    # Quick Actions - AGORA POSICIONADO LOGO ABAIXO DO CAMPO DE INPUT
+    st.markdown('<div class="bino-quick-actions">', unsafe_allow_html=True)
+    st.markdown('<div class="quick-actions-title">Ações rápidas:</div>', unsafe_allow_html=True)
+    
+    # Criar colunas para os botões - MAIS DISCRETOS
     cols = st.columns(4)
     quick_actions = [
-        ("📊 Desempenho Despacho", "Qual o desempenho dos despachos?"),
-        ("🛣️ Otimização de Rotas", "Sugerir rotas para hoje"), 
-        ("📦 Estoque Disponível", "Verificar estoque disponível"),
-        ("🚚 Capacidade Disponível", "Verificar capacidade disponível")
+        ("📊 Desempenho", "Qual o desempenho dos despachos?"),
+        ("🛣️ Rotas", "Sugerir rotas para hoje"), 
+        ("📦 Estoque", "Verificar estoque disponível"),
+        ("🚚 Capacidade", "Verificar capacidade disponível")
     ]
     
     for i, (label, prompt) in enumerate(quick_actions):
@@ -172,16 +227,6 @@ def chat_panel():
                 st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)  # Fecha quick actions
-    
-    # Área de input
-    st.markdown('<div class="bino-input-container">', unsafe_allow_html=True)
-    
-    # Input do chat - usando st.chat_input nativo
-    if "pending_prompt" not in st.session_state:
-        st.session_state.pending_prompt = None
-    
-    # Usar st.chat_input que é mais adequado para chat
-    user_input = st.chat_input("Digite sua pergunta para o Bino...")
     
     # Processar input pendente das quick actions
     final_prompt = user_input or st.session_state.pending_prompt
@@ -241,11 +286,14 @@ def chat_panel():
             "timestamp": response_timestamp
         })
         
+        # MARCA PARA FOCAR E ROLAR APÓS A RESPOSTA DO ASSISTENTE
+        st.session_state.focus_input = True
+        st.session_state.input_key += 1  # Força re-render do input
+        
         # Rerun para atualizar a interface
         st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)  # Fecha input container
-    st.markdown('</div>', unsafe_allow_html=True)  # Fecha chat main
 
 def main():
     init_session_state()

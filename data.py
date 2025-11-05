@@ -1,21 +1,21 @@
 # data.py
 DESPACHO_DATA = {
-    "diaAnterior": 156,
-    "acumulMensal": 3420,
-    "planoAcumul": 3600,
-    "desvio": -180,
-    "capacidadeUtilizada": 78
+    "diaAnterior": 13.420,
+    "acumulMensal": 46.941,
+    "planoAcumul": 36.991,
+    "desvio": 9.950,
+    "capacidadeUtilizada": 82
 }
 
 SUGESTOES_PLANO = [
     {"id": "670103-15", "cliente": "Toyota", "produto": "Laminado a Quente",
-     "quantidade": "45 ton", "prioridade": "Crítica", "destino": "São Paulo - SP",
+     "quantidade": "45 ton", "prioridade": "OV Crítica", "destino": "São Paulo - SP",
      "modal": "Rodoviário", "caminhao": "CAM-012"},
     {"id": "670104-22", "cliente": "Metalúrgica Rio", "produto": "Laminado a Frio",
      "quantidade": "32 ton", "prioridade": "Média", "destino": "Rio de Janeiro - RJ",
      "modal": "Ferroviário", "caminhao": "CAM-008"},
     {"id": "670105-08", "cliente": "Honda Automóveis", "produto": "Laminado a Frio",
-     "quantidade": "28 ton", "prioridade": "Crítica", "destino": "Belo Horizonte - MG",
+     "quantidade": "28 ton", "prioridade": "OV Crítica", "destino": "Belo Horizonte - MG",
      "modal": "Rodoviário", "caminhao": "CAM-015"},
     {"id": "670106-31", "cliente": "Convaço", "produto": "Laminado a Quente",
      "quantidade": "50 ton", "prioridade": "Baixa", "destino": "Curitiba - PR",
