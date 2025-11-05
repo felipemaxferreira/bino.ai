@@ -159,10 +159,10 @@ def chat_panel():
     # Criar colunas para os botões
     cols = st.columns(4)
     quick_actions = [
-        ("📊 Desempenho", "Qual o desempenho dos despachos?"),
-        ("🛣️ Rotas", "Sugerir rotas para hoje"), 
-        ("📦 Estoque", "Verificar estoque disponível"),
-        ("🚚 Capacidade", "Verificar capacidade disponível")
+        ("📊 Desempenho Despacho", "Qual o desempenho dos despachos?"),
+        ("🛣️ Otimização de Rotas", "Sugerir rotas para hoje"), 
+        ("📦 Estoque Disponível", "Verificar estoque disponível"),
+        ("🚚 Capacidade Disponível", "Verificar capacidade disponível")
     ]
     
     for i, (label, prompt) in enumerate(quick_actions):
