@@ -8,7 +8,6 @@ DESPACHO_DATA = {
 }
 
 # data.py - Atualize o PLANO_DESPACHO_DATA com os novos dados
-
 PLANO_DESPACHO_DATA = {
     "hoje": "2025-09-04",
     "total_geral": {
@@ -57,7 +56,6 @@ PLANO_DESPACHO_DATA = {
 }
 
 # data.py - Atualize as SUGESTOES_PLANO baseadas na nova planilha
-
 SUGESTOES_PLANO = [
     {"id": "670103-15", "cliente": "Toyota", "produto": "Laminado a Quente",
      "quantidade": "45 ton", "prioridade": "OV Crítica", "destino": "São Paulo - SP",
