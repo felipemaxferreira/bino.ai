@@ -49,6 +49,8 @@ def badge(text: str, style: str):
 def chip(text: str, color="#16A34A", bg="#ECFDF5"):
     return f'<span style="font-size:.75rem; padding:.15rem .5rem; border-radius:999px; background:{bg}; color:{color}; font-weight:600">{text}</span>'
 
+# ui_components.py - Atualize a função sugestao_list
+
 def sugestao_list(items):
     st.caption(f"💡 Sugestões otimizadas para hoje — Total: {sum(int(i['quantidade'].split()[0]) for i in items)} ton em {len(items)} despachos")
     for s in items:
@@ -64,7 +66,8 @@ def sugestao_list(items):
                 <div style="display:flex; justify-content:space-between; font-size:.8rem;">
                     <span style="color:#6B7280">📍 {s['destino']}</span>
                     <div style="display:flex; gap:.5rem">
-                        {chip(s['modal'], color="#2563EB", bg="#EFF6FF") if s['modal']=='Ferroviário' else chip(s['modal'], color="#2563EB", bg="#EFF6FF")}
+                        {chip(s['usina'], color="#DC2626", bg="#FEE2E2")}
+                        {chip(s['modal'], color="#2563EB", bg="#EFF6FF")}
                         {chip(s['caminhao'])}
                     </div>
                 </div>
@@ -376,3 +379,311 @@ def assistant_header(title: str, subtitle: str, avatar_path: str):
     with right:
         st.markdown(f"<div style='font-weight:700; font-size:1.1rem;'>{title}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='color:#16A34A; font-size:0.9rem;'>{subtitle}</div>", unsafe_allow_html=True)
+
+# ui_components.py - Adicione esta função ao arquivo existente
+
+# ui_components.py - Adicione esta função
+
+# ui_components.py - Atualize a função plano_despacho_list
+
+# ui_components.py - Atualize a função plano_despacho_list para fonte menor na visão expandida
+
+# ui_components.py - Atualize a função plano_despacho_list para formatar números com 2 casas decimais
+
+def plano_despacho_list(plano_data, expanded=False):
+    """Componente para exibir o plano de despacho com opção de expandir/recolher"""
+    
+    st.caption("📋 Plano de Despacho - Visão Consolidada")
+    
+    # Botão para expandir/recolher
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("📊 Ver Planilha Completa" if not expanded else "📋 Ver Resumo", 
+                    use_container_width=True, key="toggle_planilha"):
+            st.session_state.plano_expanded = not expanded
+            st.rerun()
+    
+    # Função auxiliar para formatar números com 2 casas decimais
+    def format_number(value):
+        """Formata número para 2 casas decimais, tratando valores zero e negativos"""
+        if value == 0:
+            return "0.00"
+        elif isinstance(value, (int, float)):
+            return f"{value:.2f}"
+        else:
+            return str(value)
+    
+    if not expanded:
+        # VISÃO RESUMIDA
+        st.markdown("#### 📈 Resumo do Despacho")
+        
+        # Cards principais com cores baseadas nos valores
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            delta_color = "normal" if plano_data['total_geral']['hoje_liberado'] > plano_data['total_geral']['dia_anterior_real'] else "inverse"
+            st.metric(
+                "Hoje - Liberado", 
+                f"{format_number(plano_data['total_geral']['hoje_liberado'])} kt",
+                delta=f"{format_number(plano_data['total_geral']['dia_anterior_real'])} kt ontem",
+                delta_color=delta_color
+            )
+        with c2:
+            delta_color = "normal" if plano_data['total_geral']['acumulado_delta'] >= 0 else "inverse"
+            st.metric(
+                "Acumulado Real", 
+                f"{format_number(plano_data['total_geral']['acumulado_real'])} kt",
+                delta=f"{format_number(plano_data['total_geral']['acumulado_delta'])} kt vs plano",
+                delta_color=delta_color
+            )
+        with c3:
+            st.metric(
+                "Previsão Manhã", 
+                f"{format_number(plano_data['clientes_diretos']['total']['previsao_manha'])} kt"
+            )
+        with c4:
+            delta_color = "normal" if plano_data['clientes_diretos']['total']['liberado'] > plano_data['clientes_diretos']['total']['previsao_manha'] else "inverse"
+            eficiencia = (plano_data['clientes_diretos']['total']['liberado']/plano_data['clientes_diretos']['total']['previsao_manha'])*100 if plano_data['clientes_diretos']['total']['previsao_manha'] > 0 else 0
+            st.metric(
+                "Eficiência", 
+                f"{eficiencia:.1f}%",
+                delta_color=delta_color
+            )
+        
+        # Clientes Diretos - Resumo
+        st.markdown("#### 🏭 Clientes Diretos")
+        
+        # Total Usinas vs CDs
+        total_usinas = sum(usina['liberado'] for usina in plano_data['clientes_diretos']['usinas'])
+        total_cds = sum(cd['liberado'] for cd in plano_data['clientes_diretos']['cds'])
+        
+        usina_cols = st.columns(2)
+        with usina_cols[0]:
+            st.metric("Total Usinas", f"{format_number(total_usinas)} kt")
+        with usina_cols[1]:
+            st.metric("Total CDs", f"{format_number(total_cds)} kt")
+        
+        # Principais usinas
+        st.markdown("**Principais Usinas**")
+        usinas_data = plano_data['clientes_diretos']['usinas']
+        usinas_cols = st.columns(len(usinas_data))
+        for i, usina in enumerate(usinas_data):
+            with usinas_cols[i]:
+                delta_color = "normal" if usina['liberado'] > usina['previsao_manha'] else "inverse"
+                st.metric(
+                    usina['nome'],
+                    f"{format_number(usina['liberado'])} kt",
+                    delta=f"{format_number(usina['previsao_manha'])} kt previsto",
+                    delta_color=delta_color
+                )
+        
+        # Principais CDs
+        st.markdown("**Principais CDs**")
+        cds_data = [cd for cd in plano_data['clientes_diretos']['cds'] if cd['liberado'] > 0][:4]
+        if cds_data:
+            cds_cols = st.columns(len(cds_data))
+            for i, cd in enumerate(cds_data):
+                with cds_cols[i]:
+                    delta_color = "normal" if cd['liberado'] > cd['previsao_manha'] else "inverse"
+                    st.metric(
+                        cd['nome'],
+                        f"{format_number(cd['liberado'])} kt",
+                        delta=f"{format_number(cd['previsao_manha'])} kt previsto",
+                        delta_color=delta_color
+                    )
+    
+    else:
+        # VISÃO EXPANDIDA - COM FONTE MENOR E 2 CASAS DECIMAIS
+        st.markdown("#### 📊 Planilha Completa de Despacho")
+        
+        # CSS para fontes menores nos containers
+        st.markdown("""
+        <style>
+        .small-metric .stMetric {
+            font-size: 0.8rem !important;
+        }
+        .small-metric .stMetric label {
+            font-size: 0.7rem !important;
+        }
+        .small-metric .stMetric value {
+            font-size: 0.9rem !important;
+        }
+        .compact-container {
+            padding: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .compact-container .stMetric {
+            margin-bottom: 0.2rem !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Total Geral
+        st.markdown("##### **TOTAL GERAL**")
+        with st.container(border=True):
+             # Acumulado em linha separada
+            st.markdown("**HOJE**", help="Dados do dia atual")
+            cols = st.columns(3)
+            with cols[0]:
+                st.metric("PLANO", f"{format_number(plano_data['total_geral']['hoje_plano'])} kt", 
+                         help="Plano para hoje")
+            with cols[1]:
+                st.metric("LIBERADO", f"{format_number(plano_data['total_geral']['hoje_liberado'])} kt",
+                         help="Quantidade liberada hoje")
+            with cols[2]:
+                st.metric("PLANO", f"{format_number(plano_data['total_geral']['dia_anterior_plano'])} kt",
+                         help="Plano do dia anterior")
+
+            # Acumulado em linha separada
+            st.markdown("---")
+            st.markdown("**DIA ANTERIOR**", help="Dados do dia anterior")
+            cols = st.columns(2)
+            with cols[0]:
+                st.metric("REAL", f"{format_number(plano_data['total_geral']['dia_anterior_real'])} kt",
+                         help="Realizado no dia anterior")
+            with cols[1]:
+                delta_color = "normal" if plano_data['total_geral']['dia_anterior_delta'] >= 0 else "inverse"
+                st.metric("∆", f"{format_number(plano_data['total_geral']['dia_anterior_delta'])} kt", 
+                         delta_color=delta_color,
+                         help="Diferença entre real e plano do dia anterior")
+
+            # Acumulado em linha separada
+            st.markdown("---")
+            st.markdown("**MENSAL**", help="Dados do mês")
+            acum_cols = st.columns(3)
+            with acum_cols[0]:
+                st.metric("PLANO ACUM.", f"{format_number(plano_data['total_geral']['acumulado_plano'])} kt",
+                         help="Plano acumulado")
+            with acum_cols[1]:
+                st.metric("REAL ACUM.", f"{format_number(plano_data['total_geral']['acumulado_real'])} kt",
+                         help="Real acumulado")
+            with acum_cols[2]:
+                delta_color = "normal" if plano_data['total_geral']['acumulado_delta'] >= 0 else "inverse"
+                st.metric("∆ ACUM", f"{format_number(plano_data['total_geral']['acumulado_delta'])} kt", 
+                         delta_color=delta_color,
+                         help="Diferença acumulada")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Clientes Diretos - Detalhado
+        st.markdown("##### 🏭 CLIENTES DIRETOS - DETALHADO")
+        
+        # Total Clientes Diretos - Layout mais compacto
+        with st.container(border=True):
+            st.markdown('<div class="compact-container">', unsafe_allow_html=True)
+            total = plano_data['clientes_diretos']['total']
+            
+            # Primeira linha - principais indicadores
+            linha1_cols = st.columns(5)
+            with linha1_cols[0]:
+                st.metric("PREV.", f"{format_number(total['previsao_manha'])} kt",
+                         help="Previsão da manhã")
+            with linha1_cols[1]:
+                st.metric("PLANO", f"{format_number(total['plano'])} kt",
+                         help="Plano do dia")
+            with linha1_cols[2]:
+                st.metric("LIB.", f"{format_number(total['liberado'])} kt",
+                         help="Liberado hoje")
+            with linha1_cols[3]:
+                st.metric("D.ANT REAL", f"{format_number(total['dia_anterior_real'])} kt",
+                         help="Dia anterior - Real")
+            with linha1_cols[4]:
+                delta_color = "normal" if total['dia_anterior_delta'] >= 0 else "inverse"
+                st.metric("∆ D.ANT", f"{format_number(total['dia_anterior_delta'])} kt", 
+                         delta_color=delta_color,
+                         help="Delta dia anterior")
+            
+            # Segunda linha - acumulados
+            linha2_cols = st.columns(4)
+            with linha2_cols[0]:
+                st.metric("ACUM PLANO", f"{format_number(total['acumulado_plano'])} kt",
+                         help="Acumulado plano")
+            with linha2_cols[1]:
+                st.metric("ACUM REAL", f"{format_number(total['acumulado_real'])} kt",
+                         help="Acumulado real")
+            with linha2_cols[2]:
+                delta_color = "normal" if total['acumulado_delta'] >= 0 else "inverse"
+                st.metric("∆ ACUM", f"{format_number(total['acumulado_delta'])} kt", 
+                         delta_color=delta_color,
+                         help="Delta acumulado")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Usinas - Layout mais compacto
+        st.markdown("**USINAS**")
+        total_usinas = sum(usina['liberado'] for usina in plano_data['clientes_diretos']['usinas'])
+        with st.container(border=True):
+            st.markdown('<div class="compact-container">', unsafe_allow_html=True)
+            st.metric("TOTAL USINAS", f"{format_number(total_usinas)} kt",
+                     help="Total liberado das usinas")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Detalhes das Usinas - Layout horizontal compacto
+        for usina in plano_data['clientes_diretos']['usinas']:
+            with st.container(border=True):
+                st.markdown('<div class="compact-container">', unsafe_allow_html=True)
+                st.markdown(f"**{usina['nome']}**")
+                
+                # Layout com 2 linhas de métricas
+                linha1_cols = st.columns(4)
+                with linha1_cols[0]:
+                    st.metric("PREV", f"{format_number(usina['previsao_manha'])} kt")
+                with linha1_cols[1]:
+                    st.metric("PLANO", f"{format_number(usina['plano'])} kt")
+                with linha1_cols[2]:
+                    st.metric("LIB", f"{format_number(usina['liberado'])} kt")
+                with linha1_cols[3]:
+                    st.metric("D.ANT", f"{format_number(usina['dia_anterior_real'])} kt")
+                
+                linha2_cols = st.columns(4)
+                with linha2_cols[0]:
+                    delta_color = "normal" if usina['dia_anterior_delta'] >= 0 else "inverse"
+                    st.metric("∆ D.ANT", f"{format_number(usina['dia_anterior_delta'])} kt", delta_color=delta_color)
+                with linha2_cols[1]:
+                    st.metric("ACUM P", f"{format_number(usina['acumulado_plano'])} kt")
+                with linha2_cols[2]:
+                    st.metric("ACUM R", f"{format_number(usina['acumulado_real'])} kt")
+                with linha2_cols[3]:
+                    delta_color = "normal" if usina['acumulado_delta'] >= 0 else "inverse"
+                    st.metric("∆ ACUM", f"{format_number(usina['acumulado_delta'])} kt", delta_color=delta_color)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+        
+        # CDs - Layout mais compacto
+        st.markdown("**CENTROS DE DISTRIBUIÇÃO**")
+        total_cds = sum(cd['liberado'] for cd in plano_data['clientes_diretos']['cds'])
+        with st.container(border=True):
+            st.markdown('<div class="compact-container">', unsafe_allow_html=True)
+            st.metric("TOTAL CDs", f"{format_number(total_cds)} kt",
+                     help="Total liberado dos CDs")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Detalhes dos CDs - Layout horizontal compacto
+        for cd in plano_data['clientes_diretos']['cds']:
+            with st.container(border=True):
+                st.markdown('<div class="compact-container">', unsafe_allow_html=True)
+                st.markdown(f"**{cd['nome']}**")
+                
+                # Layout com 2 linhas de métricas
+                linha1_cols = st.columns(4)
+                with linha1_cols[0]:
+                    st.metric("PREV", f"{format_number(cd['previsao_manha'])} kt")
+                with linha1_cols[1]:
+                    st.metric("PLANO", f"{format_number(cd['plano'])} kt")
+                with linha1_cols[2]:
+                    st.metric("LIB", f"{format_number(cd['liberado'])} kt")
+                with linha1_cols[3]:
+                    st.metric("D.ANT", f"{format_number(cd['dia_anterior_real'])} kt")
+                
+                linha2_cols = st.columns(4)
+                with linha2_cols[0]:
+                    delta_color = "normal" if cd['dia_anterior_delta'] >= 0 else "inverse"
+                    st.metric("∆ D.ANT", f"{format_number(cd['dia_anterior_delta'])} kt", delta_color=delta_color)
+                with linha2_cols[1]:
+                    st.metric("ACUM P", f"{format_number(cd['acumulado_plano'])} kt")
+                with linha2_cols[2]:
+                    st.metric("ACUM R", f"{format_number(cd['acumulado_real'])} kt")
+                with linha2_cols[3]:
+                    delta_color = "normal" if cd['acumulado_delta'] >= 0 else "inverse"
+                    st.metric("∆ ACUM", f"{format_number(cd['acumulado_delta'])} kt", delta_color=delta_color)
+                
+                st.markdown('</div>', unsafe_allow_html=True)

@@ -2,10 +2,10 @@
 import base64
 import streamlit as st
 from datetime import datetime
-from data import DESPACHO_DATA, SUGESTOES_PLANO, ESTOQUE_DATA, LIBERADO_DATA
+from data import DESPACHO_DATA, SUGESTOES_PLANO, ESTOQUE_DATA, LIBERADO_DATA, PLANO_DESPACHO_DATA
 from logic import generate_response
 from ui_components import (
-    kpi_card, progress_card, sugestao_list, estoque_list, liberado_list, _image_to_base64, inject_global_css, assistant_header
+    plano_despacho_list, kpi_card, progress_card, sugestao_list, estoque_list, liberado_list, _image_to_base64, inject_global_css, assistant_header
 )
 import os, time
 
@@ -24,6 +24,9 @@ def init_session_state():
         st.session_state.focus_input = False
     if "input_key" not in st.session_state:
         st.session_state.input_key = 0
+    # Adicionar estado para controle da expansão do plano
+    if "plano_expanded" not in st.session_state:
+        st.session_state.plano_expanded = False
 
 def header():
     st.set_page_config(page_title=PAGE_TITLE, page_icon="🚚", layout="wide")
@@ -45,6 +48,8 @@ def header():
         """,
         unsafe_allow_html=True
     )
+
+# app.py - Modifique a função left_panel()
 
 def left_panel():
     st.markdown("#### Despacho Mensal")
@@ -90,21 +95,35 @@ def left_panel():
     st.progress(DESPACHO_DATA["capacidadeUtilizada"] / 100.0, text=f"Capacidade de Despacho Diária Utilizada: {DESPACHO_DATA['capacidadeUtilizada']}%")
 
     st.markdown("#### Sugestões do Bino")
-    tab1, tab2, tab3, tab4 = st.tabs(["Sugestão", "Despacho", "Estoque", "Liberado"])
+    
+    # MODIFICAÇÃO AQUI: Adicionar a aba "Plano de Despacho"
+    tab1, tab2, tab3, tab4 = st.tabs(["Plano de Despacho", "Crítico", "Estoque", "OVs Liberadas"])
+    
     with tab1:
-        sugestao_list(SUGESTOES_PLANO)
+        # Inicializar estado da expansão se não existir
+        if "plano_expanded" not in st.session_state:
+            st.session_state.plano_expanded = False
+            
+        # Componente do plano de despacho
+        plano_despacho_list(PLANO_DESPACHO_DATA, st.session_state.plano_expanded)
+    
     with tab2:
+        sugestao_list(SUGESTOES_PLANO)
+    
+    #with tab3:
         # Reexibe os KPIs principais de "Despacho" para ficar próximo à UI original
-        st.caption("Indicadores de Despacho")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.metric("Dia Anterior", f"{DESPACHO_DATA['diaAnterior']} ton")
-        with c2:
-            st.metric("Acumul. Mensal", f"{DESPACHO_DATA['acumulMensal']:,} ton".replace(",", "."))
-        with c3:
-            st.metric("Plano Acumul.", f"{DESPACHO_DATA['planoAcumul']:,} ton".replace(",", "."))
+        #st.caption("Indicadores de Despacho")
+        #c1, c2, c3 = st.columns(3)
+        #with c1:
+        #    st.metric("Dia Anterior", f"{DESPACHO_DATA['diaAnterior']} ton")
+        #with c2:
+        #    st.metric("Acumul. Mensal", f"{DESPACHO_DATA['acumulMensal']:,} ton".replace(",", "."))
+        #with c3:
+        #    st.metric("Plano Acumul.", f"{DESPACHO_DATA['planoAcumul']:,} ton".replace(",", "."))
+    
     with tab3:
         estoque_list(ESTOQUE_DATA)
+    
     with tab4:
         liberado_list(LIBERADO_DATA)
 

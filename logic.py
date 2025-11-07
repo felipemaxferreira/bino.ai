@@ -1,6 +1,31 @@
+from data import PLANO_DESPACHO_DATA
 # logic.py
 def generate_response(question: str) -> str:
     q = (question or "").lower()
+
+    if any(k in q for k in ["plano", "despacho", "planilha", "clientes diretos"]):
+        total_liberado = PLANO_DESPACHO_DATA['total_geral']['hoje_liberado']
+        acumulado_real = PLANO_DESPACHO_DATA['total_geral']['acumulado_real']
+        acumulado_delta = PLANO_DESPACHO_DATA['total_geral']['acumulado_delta']
+        
+        # Calcular totais por categoria
+        total_usinas = sum(usina['liberado'] for usina in PLANO_DESPACHO_DATA['clientes_diretos']['usinas'])
+        total_cds = sum(cd['liberado'] for cd in PLANO_DESPACHO_DATA['clientes_diretos']['cds'])
+        
+        return (
+            "📊 **Análise do Plano de Despacho Atual:**\n\n"
+            f"• **Hoje liberado:** {total_liberado} kt\n"
+            f"• **Acumulado real:** {acumulado_real} kt\n"
+            f"• **Δ vs plano:** {acumulado_delta} kt {'(positivo)' if acumulado_delta >= 0 else '(negativo)'}\n\n"
+            "🏭 **Distribuição por Origem:**\n"
+            f"• **Usinas:** {total_usinas} kt ({total_usinas/total_liberado*100:.1f}%)\n"
+            f"• **CDs:** {total_cds} kt ({total_cds/total_liberado*100:.1f}%)\n\n"
+            "🚛 **Principais Origem:**\n"
+            f"• **IPATINGA:** {PLANO_DESPACHO_DATA['clientes_diretos']['usinas'][0]['liberado']} kt\n"
+            f"• **CUBATÃO:** {PLANO_DESPACHO_DATA['clientes_diretos']['usinas'][1]['liberado']} kt\n"
+            f"• **TISL:** {PLANO_DESPACHO_DATA['clientes_diretos']['cds'][1]['liberado']} kt\n\n"
+            "Deseja que eu detalhe alguma área específica do plano?"
+        )
 
     if any(k in q for k in ["prioridade", "urgente", "crítica", "critica"]):
         return (
