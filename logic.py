@@ -3,6 +3,43 @@ from data import PLANO_DESPACHO_DATA
 def generate_response(question: str) -> str:
     q = (question or "").lower()
 
+    # NOVAS PERGUNTAS IMPLEMENTADAS
+    if any(k in q for k in ["capacidade de 30t", "30t saindo de ipatinga", "ipatinga para grande bh", "grande belo horizonte"]):
+        return (
+            "🚚 **AALBORG**\n"
+            "• Material liberado: 19,5t\n"
+            "• **Sugestão:** Solicitar liberação do material suspenso por motivo comercial (9,2t) para composição de carga.\n"
+            "• **Responsável:** Felipe Marques\n\n"
+            "📦 **TIBERINAMG**\n"
+            "• **Sugestão:** Avaliar antecipação de material (48t) com entrega programada para o próximo decêndio.\n"
+            "• **Responsável:** Airam Tomas\n\n"
+            "🔄 **Transferência para TISL**\n"
+            "• **Sugestão:** Clientes ASSO (17t) e FERROMINAS (11t) com material disponível para transferência para TISL (Santa Luzia)\n"
+            "• **Responsável:** Claudio Tadeu\n\n"
+            "💡 **Recomendação:** Priorizar a solicitação de liberação do material suspenso da AALBORG para atender rapidamente à capacidade de 30t."
+        )
+
+    if any(k in q for k in ["672934-3", "ordem de venda 672934-3", "6t crítica", "composição de carga"]):
+        return (
+            "📋 **Ordem de Venda 672934-3**\n"
+            "• **Cliente:** HONDASU\n"
+            "• **Destino:** TAUBATÉ (Soluções Usiminas)\n"
+            "• **Modal:** Ferroviário\n"
+            "• **Situação:** CRÍTICA (6t)\n\n\n"
+            "🚅 **Mantendo o modal como Ferroviário:**\n"
+            "• Utilizar lote **0000170707** (12.0t) ou **0000234209** (8.5t) do próprio cliente (HONDASU)\n"
+            "• **Total disponível:** 26.5t\n"
+            "• **Vantagem:** Mantém a eficiência do modal ferroviário\n\n"
+            "🚚 **Alternativa - Alterando para modal Rodoviário:**\n"
+            "• Utilizar lotes da ordem **670005-3** (cliente MANSU - também crítica):\n"
+            "  - Lote **0000226989** (9,6t)\n"
+            "  - Lote **0000225760** (8,9t)\n"
+            "• **Total disponível:** 24,5t\n"
+            "• **Vantagem:** Agilidade no despacho\n\n"
+            "⚡ **Recomendação:** Utilizar os lotes do próprio cliente HONDASU mantendo o modal ferroviário para melhor eficiência operacional."
+        )
+
+    # PERGUNTAS EXISTENTES (mantidas da versão anterior)
     if any(k in q for k in ["plano", "despacho", "planilha", "clientes diretos"]):
         total_liberado = PLANO_DESPACHO_DATA['total_geral']['hoje_liberado']
         acumulado_real = PLANO_DESPACHO_DATA['total_geral']['acumulado_real']
